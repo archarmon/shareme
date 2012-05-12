@@ -1,0 +1,10 @@
+target/
+test/
+output/
+.settings/
+src/main/webapp/WEB-INF/glassfish-web.xml
+.classpath
+.project
+*.nblh~
+*.sql~
+nbactions.xml
