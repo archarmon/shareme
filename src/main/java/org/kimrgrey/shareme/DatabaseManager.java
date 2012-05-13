@@ -140,8 +140,10 @@ public final class DatabaseManager {
     }
 
     public static void checkDatabaseRevision() {
+        
     }
 
     public static void updateFriendList() {
+        
     }
 }

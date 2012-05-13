@@ -1,13 +1,20 @@
 package org.kimrgrey.shareme;
 
+import java.util.Objects;
+
 public class FileSpec {
 
     private String fileName = null;
-    private double fileSize = 0.0;
+    private long fileSize = 0;
 
     public FileSpec() {
     }
-
+    
+    public FileSpec(String fileName, long fileSize) {
+        this.fileName = fileName;
+        this.fileSize = fileSize;
+    }
+    
     public String getFileName() {
         return fileName;
     }
@@ -16,11 +23,37 @@ public class FileSpec {
         this.fileName = fileName;
     }
 
-    public double getFileSize() {
+    public long getFileSize() {
         return fileSize;
     }
 
-    public void setFileSize(double fileSize) {
+    public void setFileSize(long fileSize) {
         this.fileSize = fileSize;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final FileSpec other = (FileSpec) obj;
+        if (!this.fileName.equals(other.fileName)) {
+            return false;
+        }
+        if (this.fileSize != other.fileSize) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 11 * hash + Objects.hashCode(this.fileName);
+        hash = 11 * hash + (int) (this.fileSize ^ (this.fileSize >>> 32));
+        return hash;
     }
 }

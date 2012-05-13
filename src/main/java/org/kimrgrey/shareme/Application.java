@@ -1,5 +1,6 @@
 package org.kimrgrey.shareme;
 
+import java.util.logging.Level;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -90,6 +91,12 @@ public final class Application {
             } catch (InvalidConfigException exception) {
                 logger.error(exception.getMessage());
             }
+        }
+        FolderScanner scaner = new FolderScanner(configuration.getFolderName());
+        try {
+            scaner.startScanning();
+        } catch (InvalidConfigException ex) {
+            
         }
     }
 }
