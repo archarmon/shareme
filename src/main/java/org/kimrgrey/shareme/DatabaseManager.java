@@ -1,9 +1,12 @@
 package org.kimrgrey.shareme;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Scanner;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
@@ -62,12 +65,83 @@ public final class DatabaseManager {
             }
         }
     }
-    
-    public static void checkDatabaseRevision() {
-        
+
+    public static boolean executeScript(File script) {
+        Connection connection = null;
+        try {
+            connection = DatabaseManager.getDatabaseConnection();
+        } catch (InvalidConfigException exception) {
+            logger.debug("Failed to execute given script", exception);
+            return false;
+        }
+        QueryRunner runner = new QueryRunner();
+        try {
+            Scanner scanner = new Scanner(script);
+            scanner.useDelimiter(";");
+            boolean result = true;
+            while (scanner.hasNext()) {
+                String statementText = scanner.next().trim().replaceAll("\\s+", " ");
+                logger.debug("Execute statement {}", statementText);
+                try {
+                    runner.update(connection, statementText);
+                } catch (SQLException exception) {
+                    logger.debug("Failed to execute statement {} because of database exception", statementText, exception);
+                    result = false;
+                    break;
+                }
+            }
+            if (result) {
+                try {
+                    connection.commit();
+                } catch (SQLException exception) {
+                    logger.warn("Failed to perform commit", exception);
+                }
+            } else {
+                try {
+                    connection.rollback();
+                } catch (SQLException exception) {
+                    logger.warn("Failed to perform rollback", exception);
+                }
+            }
+            try {
+                DbUtils.close(connection);
+            } catch (SQLException exception) {
+                logger.warn("Failed to close database connection", exception);
+            }
+            return result;
+        } catch (FileNotFoundException exception) {
+            logger.debug("Failed to execute given script", exception);
+            return false;
+        }
     }
-    
+
+    public static void initializeDatabase() throws InvalidConfigException {
+        Configuration configuration = Configuration.getConfiguration();
+        File dropScript = new File(configuration.getScriptFolder() + File.separatorChar + "drop.sql");
+        if (!dropScript.exists() || !dropScript.isFile()) {
+            logger.debug("Script that drops database schema could not be found in directory {}, please check configuration", configuration.getScriptFolder());
+        } else {
+            logger.info("Try to execute script that drops database schema");
+            if (!DatabaseManager.executeScript(dropScript)) {
+                logger.debug("Database schema could not be dropped, this step will be sckipped");
+            }
+        }
+        File createScript = new File(configuration.getScriptFolder() + File.separatorChar + "create.sql");
+        if (!createScript.exists() || !createScript.isFile()) {
+            logger.debug("Script that creates database schema could not be found in directory {}, please check configuration", configuration.getScriptFolder());
+            throw new InvalidConfigException("Script that creates database schema could not be found, please check configuration");
+        }
+        logger.info("Try to execute script that creates database schema");
+        if (!DatabaseManager.executeScript(createScript)) {
+            logger.debug("Script that creates database schema could not be read from directory {}, please check configuration", configuration.getScriptFolder());
+            throw new InvalidConfigException("Script that creates database schema could not be read, please check configuration");
+        }
+        logger.info("Database schema was successfully initialized");
+    }
+
+    public static void checkDatabaseRevision() {
+    }
+
     public static void updateFriendList() {
-        
     }
 }

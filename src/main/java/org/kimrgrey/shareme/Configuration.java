@@ -42,6 +42,7 @@ public class Configuration {
         }
         return config;
     }
+    private String scriptFolder = System.getProperty("user.dir");
     private String folderName = System.getProperty("user.home");
     private long scannerTimeout = DEFAULT_SCANNER_TIMEOUT;
     private String databaseUrl = null;
@@ -107,5 +108,13 @@ public class Configuration {
 
     public void setServiceUser(String serviceUser) {
         this.serviceUser = serviceUser;
+    }
+
+    public String getScriptFolder() {
+        return scriptFolder;
+    }
+
+    public void setScriptFolder(String scriptFolder) {
+        this.scriptFolder = scriptFolder;
     }
 }

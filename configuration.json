@@ -1,9 +1,10 @@
 {
+	"scriptFolder" : "sql",
 	"folderName" : "test",
-	"scannerTimeout" : "5000"
+	"scannerTimeout" : "5000",
 	"databaseUrl" : "jdbc:h2:db",
 	"databaseUser" : "user",
-	"databasePassword" : "123456"
+	"databasePassword" : "123456",
 	"serviceUrl" : "http://localhost:8080/shareme",
 	"serviceUser" : "user"
 }

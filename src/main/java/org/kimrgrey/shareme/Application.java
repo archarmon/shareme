@@ -1,6 +1,5 @@
 package org.kimrgrey.shareme;
 
-import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -26,11 +25,13 @@ public final class Application {
         options.addOption("c", "config", true, "Name of file that contains configuration for application");
         options.addOption("f", "folder", true, "Folder that should be scanned");
         options.addOption("t", "timeout", true, "Scanning timeout");
-        options.addOption("l", "list", false, "Allows to list all files in the personal cloud");
-        options.addOption("a", "add", true, "Allows to add files in the personal cloud");
-        options.addOption("d", "delete", true, "Allows to remove files from the personal cloud");
+        options.addOption("i", "init", false, "Initialize database from scratch");
+        options.addOption("ls", "list", false, "Allows to list all files in the personal cloud");
+        options.addOption("rm", "remove", true, "Allows to remove files from the personal cloud");
+        options.addOption("cm", "commit", true, "Allows to add files in the personal cloud");
         options.addOption("co", "checkout", true, "Allows to checkout files from the personal cloud");
         options.addOption("fr", "friends", true, "Allows to get friend list");
+
         CommandLineParser parser = new PosixParser();
         try {
             this.commandLine = parser.parse(options, args);
@@ -83,5 +84,12 @@ public final class Application {
             }
         }
         logger.info("Scanner timeout is {}", configuration.getScannerTimeout());
+        if (commandLine.hasOption("init")) {
+            try {
+                DatabaseManager.initializeDatabase();
+            } catch (InvalidConfigException exception) {
+                logger.error(exception.getMessage());
+            }
+        }
     }
 }
