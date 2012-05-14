@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 public class FolderScanner {
 
     private List<FileSpec> knownFiles = new ArrayList<>();
+    private List<ScanerListener> listeners;
     private String folderName = null;
     private Timer timer = null;
     private boolean status = false;
@@ -28,12 +29,42 @@ public class FolderScanner {
     public FolderScanner(String folderName) {
         this.folderName = folderName;
         status = false;
+        listeners = new ArrayList<ScanerListener>();
         try {
             connection = DatabaseManager.getDatabaseConnection();
         } catch (InvalidConfigException ex) {
             Logger.getLogger(FolderScanner.class.getName()).log(Level.SEVERE, null, ex);
         }
         timer = new Timer();
+    }
+
+    public void addListener(ScanerListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeListener(ScanerListener listener) {
+        listeners.remove(listener);
+    }
+
+    private void onChange(FileSpec file) {
+        System.out.println("on change - " + file.getFileName());
+        for (int i = 0; i < listeners.size(); ++i) {
+            listeners.get(i).onChange(file);
+        }
+    }
+
+    private void onDelete(FileSpec file) {
+        System.out.println("on delete - " + file.getFileName());
+        for (int i = 0; i < listeners.size(); ++i) {
+            listeners.get(i).onDelete(file);
+        }
+    }
+
+    private void onNew(FileSpec file) {
+        System.out.println("on new - " + file.getFileName());
+        for (int i = 0; i < listeners.size(); ++i) {
+            listeners.get(i).onNew(file);
+        }
     }
 
     public List<FileSpec> getKnownFiles() {
@@ -66,27 +97,65 @@ public class FolderScanner {
             @Override
             public void run() {
                 File folder = new File(folderName);
-                String[] files = folder.list();
+                File[] files = folder.listFiles();
+                
                 loadKnownFiles();
                 if (knownFiles == null) {
                     knownFiles = new ArrayList<FileSpec>();
                 }
                 for (int i = 0; i < files.length; ++i) {
-                    if (knownFiles.contains(new FileSpec(files[i], new File(files[i]).getTotalSpace()))) {
-                        System.out.println("have a file - " + files[i]);
+                    FileSpec file = new FileSpec(files[i].getName(), files[i].length());
+                    if (knownFiles.contains(file)) {
+                        System.out.println("have a file " + files[i] + " " + (files[i]).length());
+                        knownFiles.remove(file);
                     } else {
-                        insertNewFile(new FileSpec(files[i], new File(files[i]).getTotalSpace()));
-                        System.out.println("add file - " + files[i]);
+                        for (int j = 0; j < knownFiles.size(); ++j) {
+                            // if true then size has been change
+                            if (knownFiles.get(j).getFileName().equals(files[i])) {
+                                System.out.println("on update - " + file.getFileName() + files[i]);
+                                updateFile(file);
+                                onChange(file);
+                            } else {
+                                System.out.println("on update - " + file.getFileName() + files[i]);
+                            }
+                        }
+                        insertNewFile(file);
+                        onNew(file);
                     }
+                }
+                if (!knownFiles.isEmpty()) {
+                    for (int i = 0; i < knownFiles.size(); ++i) {
+                        deleteFile(knownFiles.get(i));
+                        onDelete(knownFiles.get(i));
+                    }
+                }
+            }
 
+            private void deleteFile(FileSpec file) {
+                QueryRunner runner = new QueryRunner();
+                try {
+                    runner.update(connection, "DELETE FROM tb_known_files where filename = ?",
+                            file.getFileName());
+                } catch (SQLException ex) {
+                    logger.warn("Failed to perform update", ex);
+                }
+            }
+
+            private void updateFile(FileSpec file) {
+                QueryRunner runner = new QueryRunner();
+                try {
+                    runner.update(connection, "UPDATE tb_known_files set file_size = ? where filename = ?",
+                            file.getFileSize(), file.getFileName());
+                } catch (SQLException ex) {
+                    logger.warn("Failed to perform update", ex);
                 }
             }
 
             private void insertNewFile(FileSpec file) {
                 QueryRunner runner = new QueryRunner();
                 try {
-                    runner.update(connection, "INSERT INTO tb_known_files(filename, file_size) VALUES('"
-                            + file.getFileName() + "', '" + file.getFileSize() + "')");
+                    runner.update(connection, "INSERT INTO tb_known_files(filename, file_size) VALUES(?,?)",
+                            file.getFileName(), file.getFileSize());
                 } catch (SQLException ex) {
                     logger.warn("Failed to perform insert", ex);
                 }

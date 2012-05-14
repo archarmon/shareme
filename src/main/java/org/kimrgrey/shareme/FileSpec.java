@@ -44,7 +44,9 @@ public class FileSpec {
             return false;
         }
         if (this.fileSize != other.fileSize) {
+            System.out.println("false " + this.fileSize + other.fileSize);
             return false;
+            
         }
         return true;
     }
